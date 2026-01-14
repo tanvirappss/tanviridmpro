@@ -224,63 +224,121 @@ function createMenuItem(data, isPrimary) {
   return btn;
 }
 
-// --- YOUTUBE-SPECIFIC BUTTON INJECTION ---
+// --- YOUTUBE-SPECIFIC FLOATING BUTTON INJECTION ---
 function injectYouTubeDownloadButton() {
   if (youtubeButtonInjected) return;
 
-  // Wait for YouTube player controls to be ready
-  const controlsContainer = document.querySelector('.ytp-right-controls') ||
-    document.querySelector('.ytp-chrome-controls');
+  // Find the video player container
+  const videoElement = document.querySelector('video.html5-main-video');
+  const playerContainer = document.querySelector('#movie_player') ||
+    document.querySelector('.html5-video-player');
 
-  if (!controlsContainer) {
+  if (!videoElement || !playerContainer) {
     // Retry after a delay
+    console.log('[TanvirIDM Pro] Waiting for YouTube player...');
     setTimeout(injectYouTubeDownloadButton, 500);
     return;
   }
 
   youtubeButtonInjected = true;
-  console.log('[TanvirIDM Pro] Injecting YouTube download button');
+  console.log('[TanvirIDM Pro] Injecting YouTube floating download button');
 
-  const button = document.createElement('button');
-  button.className = 'ytp-button tanvir-yt-download-btn';
-  button.setAttribute('aria-label', 'Download with TanvirIDM Pro');
-  button.title = 'Download with TanvirIDM Pro';
+  // Create floating button container
+  const floatingBtn = document.createElement('div');
+  floatingBtn.className = 'tanvir-yt-floating-download';
+  floatingBtn.id = 'tanvir-yt-download-btn';
 
-  button.innerHTML = `
-        <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%" style="fill: white;">
-            <path d="M17 17V3h2v14h3l-4 4-4-4h3z"></path>
-            <path d="M28 24v4H8v-4H6v4c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2v-4h-2z"></path>
-        </svg>
-    `;
+  floatingBtn.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      <span style="font-weight: 700; font-size: 13px;">Download</span>
+    </div>
+  `;
 
-  Object.assign(button.style, {
-    width: '48px',
-    height: '48px',
-    padding: '8px',
-    background: 'transparent',
-    border: 'none',
+  // Styling - Floating overlay button
+  Object.assign(floatingBtn.style, {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    zIndex: '9999',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+    padding: '10px 16px',
+    borderRadius: '8px',
     cursor: 'pointer',
-    opacity: '0.9',
-    transition: 'opacity 0.2s'
+    boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255,255,255,0.1)',
+    backdropFilter: 'blur(10px)',
+    opacity: '0',
+    transform: 'translateY(-10px) scale(0.95)',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: 'Roboto, Arial, sans-serif',
+    pointerEvents: 'none',
+    userSelect: 'none'
   });
 
-  button.onmouseenter = () => button.style.opacity = '1';
-  button.onmouseleave = () => button.style.opacity = '0.9';
+  // Add pulsing animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes tanvirPulse {
+      0%, 100% { box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255,255,255,0.1); }
+      50% { box-shadow: 0 4px 30px rgba(102, 126, 234, 0.6), 0 0 0 1px rgba(255,255,255,0.2); }
+    }
+    .tanvir-yt-floating-download:hover {
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+      transform: translateY(0) scale(1) !important;
+      animation: tanvirPulse 2s ease-in-out infinite;
+    }
+  `;
+  document.head.appendChild(style);
 
-  button.onclick = (e) => {
+  // Show/hide on hover
+  let hideTimeout;
+
+  const showButton = () => {
+    clearTimeout(hideTimeout);
+    floatingBtn.style.opacity = '1';
+    floatingBtn.style.transform = 'translateY(0) scale(1)';
+    floatingBtn.style.pointerEvents = 'auto';
+  };
+
+  const hideButton = () => {
+    hideTimeout = setTimeout(() => {
+      floatingBtn.style.opacity = '0';
+      floatingBtn.style.transform = 'translateY(-10px) scale(0.95)';
+      floatingBtn.style.pointerEvents = 'none';
+    }, 300);
+  };
+
+  playerContainer.addEventListener('mouseenter', showButton);
+  playerContainer.addEventListener('mouseleave', hideButton);
+  floatingBtn.addEventListener('mouseenter', showButton);
+  floatingBtn.addEventListener('mouseleave', hideButton);
+
+  // Click handler
+  floatingBtn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    // Visual feedback
+    floatingBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => floatingBtn.style.transform = 'scale(1)', 150);
+
     // Get video element source
-    const videoElement = document.querySelector('video.html5-main-video');
-    let src = videoElement ? (videoElement.currentSrc || videoElement.src) : '';
+    const videoEl = document.querySelector('video.html5-main-video');
+    let src = videoEl ? (videoEl.currentSrc || videoEl.src) : '';
+
+    console.log('[TanvirIDM Pro] Fetching media options...');
 
     // Fetch Network Options from Background
     chrome.runtime.sendMessage({ type: 'GET_MEDIA_OPTIONS' }, (response) => {
-      const rect = button.getBoundingClientRect();
+      const rect = floatingBtn.getBoundingClientRect();
       createQualityMenu(
         rect.left - 250, // Position to the left of the button
-        rect.bottom,
+        rect.bottom + 5,
         response?.media || [],
         src,
         false
@@ -288,8 +346,16 @@ function injectYouTubeDownloadButton() {
     });
   };
 
-  // Insert at the beginning of controls (before other buttons)
-  controlsContainer.insertBefore(button, controlsContainer.firstChild);
+  // Make player container position relative if it's not already
+  const playerStyle = window.getComputedStyle(playerContainer);
+  if (playerStyle.position === 'static') {
+    playerContainer.style.position = 'relative';
+  }
+
+  // Append to player container
+  playerContainer.appendChild(floatingBtn);
+
+  console.log('[TanvirIDM Pro] ✅ Floating download button injected successfully');
 }
 
 // --- MAIN INJECTION LOGIC FOR NON-YOUTUBE SITES ---
@@ -373,13 +439,41 @@ function injectDownloadButton(element) {
 if (isYouTube) {
   console.log('[TanvirIDM Pro] YouTube detected - using specialized injection');
 
+  // Function to inject with retry logic
+  let retryCount = 0;
+  const maxRetries = 10;
+
+  function tryInject() {
+    // Remove old button if it exists
+    const oldButton = document.getElementById('tanvir-yt-download-btn');
+    if (oldButton) {
+      oldButton.remove();
+      youtubeButtonInjected = false;
+    }
+
+    injectYouTubeDownloadButton();
+
+    // Verify injection succeeded
+    setTimeout(() => {
+      const btn = document.getElementById('tanvir-yt-download-btn');
+      if (!btn && retryCount < maxRetries) {
+        retryCount++;
+        console.log(`[TanvirIDM Pro] Retry ${retryCount}/${maxRetries}...`);
+        setTimeout(tryInject, 1000);
+      } else if (btn) {
+        console.log('[TanvirIDM Pro] ✅ Button successfully injected and verified');
+        retryCount = 0;
+      }
+    }, 500);
+  }
+
   // Wait for page to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(injectYouTubeDownloadButton, 1000);
+      setTimeout(tryInject, 1000);
     });
   } else {
-    setTimeout(injectYouTubeDownloadButton, 1000);
+    setTimeout(tryInject, 1000);
   }
 
   // Re-inject on navigation (YouTube is a SPA)
@@ -388,8 +482,10 @@ if (isYouTube) {
     const url = location.href;
     if (url !== lastUrl) {
       lastUrl = url;
+      console.log('[TanvirIDM Pro] YouTube navigation detected, re-injecting button...');
       youtubeButtonInjected = false;
-      setTimeout(injectYouTubeDownloadButton, 1500);
+      retryCount = 0;
+      setTimeout(tryInject, 1500);
     }
   }).observe(document.body, { subtree: true, childList: true });
 

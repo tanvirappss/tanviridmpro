@@ -152,7 +152,10 @@ chrome.webRequest.onHeadersReceived.addListener(
 
             tabMediaCollections[details.tabId].set(key, item);
 
-            console.log(`[TanvirIDM] Captured: ${qualityLabel} (${ext}) - Size: ${formatSize(size)}`);
+            console.log(`[TanvirIDM] ✅ Captured: ${qualityLabel} (${ext}) - Size: ${formatSize(size)} - Tab: ${details.tabId}`);
+            if (isYouTube) {
+                console.log(`[TanvirIDM] 🎬 YouTube stream detected - Total streams for this tab: ${tabMediaCollections[details.tabId].size}`);
+            }
         }
     },
     { urls: ["<all_urls>"] },
