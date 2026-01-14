@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "TanvirIDM Pro",
+  "version": "1.0.0",
+  "description": "Accelerate downloads by up to 10x with smart file segmentation.",
+  "icons": {
+    "48": "icons/icon48.png"
+  },
+  "permissions": [
+    "downloads",
+    "storage",
+    "contextMenus",
+    "tabs",
+    "scripting",
+    "webRequest",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/icon48.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
